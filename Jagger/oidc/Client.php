@@ -14,6 +14,7 @@ class Client extends Lcobucci\JWT\Token
     private $rpRedirectURL;
     private $opConfig = array();
     private $scopes = array('openid');
+    private $claimsRequest = array();
     private $access_token;
     protected $configuration;
     protected $jwks;
@@ -70,6 +71,12 @@ class Client extends Lcobucci\JWT\Token
         $this->scopes = array_unique($this->scopes);
     }
 
+
+    public function setClaimRequest($claims){
+        $this->claimsRequest = $claims;
+    }
+
+
     public function setRedirectURL($url)
     {
         if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
@@ -90,6 +97,9 @@ class Client extends Lcobucci\JWT\Token
     public function getScopes()
     {
         return $this->scopes;
+    }
+    public function getClaimRequest(){
+        return $this->claimsRequest;
     }
 
     public function getOPConfigValue($param)
@@ -169,9 +179,17 @@ class Client extends Lcobucci\JWT\Token
             'once' => $this->getOnceSession(),
             'login_hint' => $this->getLoginHint()
         );
+        $claimsParams = '';
+
+        $claimRequests = $this->getClaimRequest();
+
+
+        if(count($claimRequests)>0){
+            $claimsParams = 'claims='.json_encode($claimRequests);
+        }
         $params = array_merge($params, $this->getAutzParams());
         $url = $authzURL . '?' . http_build_query($params, null, '&');
-        return $url;
+        return $url.'&'.$claimsParams;
 
     }
 
@@ -421,6 +439,7 @@ class Client extends Lcobucci\JWT\Token
 
     public function requestUserinfo(){
         $url = $this->getOPConfigValue('userinfo_endpoint');
+        log_message('debug','Bearer: '.$this->access_token);
         $headers = array(
             'Authorization' => 'Bearer '. $this->access_token.'',
         );
